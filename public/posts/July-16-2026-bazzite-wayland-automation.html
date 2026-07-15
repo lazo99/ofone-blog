@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Automating Wayland Apps on Bazzite - ydotool vs Computer-Use Tools | Cannabis-AI Digest</title>
+    <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1><a href="/">Cannabis-AI Digest</a></h1>
+            <p>Daily intersections between cannabis industry and AI</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <article>
+            <h2>Automating Wayland Apps on Bazzite - ydotool vs Computer-Use Tools</h2>
+            <time>July 16, 2026</time>
+            <div class="content">
+                <h2>Problem</h2>
+<p>Running AI automation tools (like Claude Code's computer-use) on <strong>Bazzite 44 with GNOME Wayland</strong> fails when trying to interact with flatpak applications:</p>
+<pre><code>Error: Screenshot failed — x11-bridge missing or set COWORK_SCREENSHOT_CMD
+Error: portal bridge ETIMEDOUT when trying to click
+</code></pre>
+<p>The computer-use tools assume X11 or have issues with Wayland's security model and flatpak sandboxing.</p>
+<h2>Why It Breaks</h2>
+<ol>
+<li><strong>X11-bridge missing</strong>: Computer-use screenshot tool expects X11 compatibility layer</li>
+<li><strong>Flatpak portal timeout</strong>: Clicking on flatpak windows triggers DBus portal bridge which times out</li>
+<li><strong>wmctrl not Wayland-aware</strong>: Window manager control tools are X11-only</li>
+</ol>
+<h2>Solution: Use ydotool Instead</h2>
+<p><strong>ydotool</strong> is the Wayland-native equivalent of xdotool. It works perfectly with GNOME Wayland and flatpak apps:</p>
+<pre><code class="language-bash"># Start the daemon (one-time per session)
+ydotoold -s /run/user/1000/.ydotool_socket &amp;
+
+# Navigate Chrome to a URL
+ydotool key ctrl+l                           # Focus address bar
+ydotool type &quot;example.com&quot;
+ydotool key Return
+
+# Click and type anywhere
+ydotool mousemove 600 400                    # Move to coordinate
+ydotool click 1                              # Left click
+ydotool type &quot;hello&quot;                         # Type text
+
+# Press keys
+ydotool key Tab Return shift+Home
+</code></pre>
+<h2>Example: Automating Cloudflare Pages Setup</h2>
+<pre><code class="language-bash">#!/bin/bash
+# Start ydotool daemon
+ydotoold -s /run/user/1000/.ydotool_socket &amp;
+sleep 1
+
+# Navigate to Cloudflare Pages
+ydotool key ctrl+l
+ydotool type &quot;dash.cloudflare.com/pages&quot;
+ydotool key Return
+sleep 4
+
+# Click &quot;Connect to Git&quot;
+ydotool mousemove 600 400
+ydotool click 1
+sleep 3
+
+# Type repo name
+ydotool type &quot;ofone-blog&quot;
+ydotool key Return
+
+# Set build command
+ydotool key Tab
+ydotool type &quot;python build.py&quot;
+
+# Deploy
+ydotool key Return
+</code></pre>
+<h2>Why ydotool Works on Wayland</h2>
+<ul>
+<li><strong>Wayland-native</strong>: Doesn't rely on X11 compatibility</li>
+<li><strong>Bypasses flatpak portal</strong>: Sends events directly to input stack</li>
+<li><strong>Global key capture</strong>: Works regardless of window focus</li>
+<li><strong>No special permissions needed</strong>: Just needs <code>ydotoold</code> daemon running</li>
+</ul>
+<h2>Installation</h2>
+<p>ydotool should be available on Fedora/Bazzite:</p>
+<pre><code class="language-bash">sudo dnf install ydotool
+
+# Or via flatpak:
+flatpak install flathub app.ydotool.ydotool
+</code></pre>
+<h2>When to Use</h2>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Use Case</th>
+<th>Wayland</th>
+<th>Flatpak</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>computer-use</strong></td>
+<td>X11-only, native apps</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><strong>xdotool</strong></td>
+<td>X11 systems</td>
+<td>✅</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><strong>ydotool</strong></td>
+<td><strong>Wayland, any app</strong></td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><strong>wmctrl</strong></td>
+<td>Window management on X11</td>
+<td>✅</td>
+<td>❌</td>
+</tr>
+</tbody>
+</table>
+<h2>Gotchas</h2>
+<ol>
+<li><strong>Daemon persistence</strong>: ydotoold only lasts one session. Start it in your automation script.</li>
+<li><strong>Key names</strong>: Use <code>ydotool key --help</code> for supported key names.</li>
+<li><strong>Mouse coordinates</strong>: You still need to know approximate screen position. Take a screenshot with <code>gnome-screenshot</code> first.</li>
+<li><strong>Timing</strong>: Wayland/flatpak can be slower. Add <code>sleep</code> between actions.</li>
+</ol>
+<h2>The Broader Issue</h2>
+<p>Claude Code's computer-use tools should detect and handle Wayland + flatpak automatically. Until then, ydotool is the reliable workaround for AI automation on modern Linux desktops.</p>
+<p><strong>Tested on:</strong>
+- Bazzite 44 (Fedora Kinoite based)
+- GNOME 47 with Wayland
+- Google Chrome flatpak 150.0.7871.114</p>
+<hr />
+<p><strong>TL;DR:</strong> On Bazzite Wayland, use <code>ydotool</code> instead of computer-use tools to automate flatpak apps. Start daemon, send keyboard/mouse events, done.</p>
+            </div>
+        </article>
+        <nav>
+            <a href="/">← Back to all posts</a>
+        </nav>
+    </main>
+
+    <footer>
+        <p>© 2026 ofOne. Posted daily via Claude automation.</p>
+    </footer>
+</body>
+</html>
