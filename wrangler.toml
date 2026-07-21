@@ -1,0 +1,19 @@
+name = "ofone-blog"
+type = "javascript"
+account_id = "130eaae07a3fe9c885de32cfe9793824"
+workers_dev = false
+
+[env.production]
+routes = [
+  { pattern = "blog.ofone.dev", zone_name = "ofone.dev" }
+]
+
+[build]
+command = "python build.py"
+cwd = "./"
+watch_paths = ["posts/**/*.md"]
+
+[site]
+bucket = "./public"
+include = ["*.html", "*.css", "*.js"]
+exclude = [".git/**/*"]
