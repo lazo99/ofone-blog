@@ -37,3 +37,6 @@ ENV/
 *.swp
 *.swo
 *~
+
+# Local-only draft scratch (superseded by daily_journal_publish.py, may contain raw personal notes)
+drafts/
